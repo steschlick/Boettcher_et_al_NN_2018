@@ -4,15 +4,15 @@
 # Last modified: 22 June 2018
 
 # This script reproduces Figures 5_a_b_c_d_f, 6_b_c, 7_b_c_d_e, and 8_h of the paper
-# "Human microglia regional heterogeneity and a core signature determined by
-# multiplexed single-cell mass cytometry" (Böttcher et al., NN 2018)
+# "Human microglia regional heterogeneity and phenotypes determined by
+# multiplexed single-cell mass cytometry" (https://doi.org/10.1038/s41593-018-0290-2)
 
 # ******************************************************************************
 #                     download / install / library 
 # ******************************************************************************
 
 # 1) go to
-# https://flowrepository.org/id/RvFrjVD4ojsU6X6pqpOGrHmR4k22hFS9rQRvigCpy0Yx5og2mUEXb6hNUd0dXzbL
+# https://flowrepository.org/id/FR-FCM-ZYM6
 # and download zip folder with fcs raw data
 
 # 2) unzip and move folder (should be 'FlowRepository_FR-FCM-ZYM6_files')

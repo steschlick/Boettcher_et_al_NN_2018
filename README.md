@@ -1,5 +1,5 @@
 ## Purpose
-The R ['Script_NN-T61915'](Script_NN-T61915.R) outlines the analysis conducted for the study "Human microglia regional heterogeneity and a core signature determined by multiplexed single-cell mass cytometry" and reproduces Figures 5_a_b_c_d_f, 6_b_c, 7_b_c_d_e, and S8_h of Boettcher et al. (Nature Neuroscience, 2018). The accompanying R package ['NNhuMG'](NNhuMG) contains a number of utility functions required to walk through the analysis.
+The R ['Script_NN-T61915'](Script_NN-T61915.R) outlines the analysis conducted for the study "Human microglia regional heterogeneity and phenotypes determined by multiplexed single-cell mass cytometry" and reproduces Figures 5_a_b_c_d_f, 6_b_c, 7_b_c_d_e, and S8_h of Böttcher et al. (Nature Neuroscience, 2018, https://doi.org/10.1038/s41593-018-0290-2). The accompanying R package ['NNhuMG'](NNhuMG) contains a number of utility functions required to walk through the analysis.
 
 ## Installation  
 1) go to https://flowrepository.org/id/FR-FCM-ZYM6 and download zip folder with all fcs files
