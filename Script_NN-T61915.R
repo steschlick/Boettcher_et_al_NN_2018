@@ -1,9 +1,9 @@
 # Author: Stephan Schlickeiser
 # Contact: stephan.schlickeiser@charite.de
 # Created: 21 June 2017
-# Last modified: 22 June 2018
+# Last modified: 26 January 2019
 
-# This script reproduces Figures 5_a_b_c_d_f, 6_b_c, 7_b_c_d_e, and 8_h of the paper
+# This script reproduces Figures 5_a_b_c_d_f, 6_b_c, 7_b_c_d_e, and S8_h of the paper
 # "Human microglia regional heterogeneity and phenotypes determined by
 # multiplexed single-cell mass cytometry" (https://doi.org/10.1038/s41593-018-0290-2)
 
@@ -31,9 +31,9 @@ install.packages(c("ks", "dbscan", "feature", "shiny", "rmarkdown", "rgl",
 # required to reproduce figures
 install.packages(c("devtools", "R.utils", "lme4", "lmerTest", "flowFP", "vegan"))
 
-# try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-biocLite(c("flowWorkspace", "CytoML", "flowType", "RchyOptimyx", "edgeR", "cydar"))
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install(c("flowWorkspace", "CytoML", "flowType", "RchyOptimyx", "edgeR", "cydar"), version = "3.8")
 
 # use install.packages("emdist") if 0.3-2 doesn’t work 
 library(devtools)
@@ -132,11 +132,8 @@ sampleNames(gs)[!grepl("concatenated", sampleNames(gs))] <- sample.names
 # collapse events of all files for all parameters 
 # into single flowFrame, for plotting
 merge.fr <- fs[[1]]
-merge.id <- rep(1,v.events[1, ])
-for (i in 2:length(fs)){
-  exprs(merge.fr) <- rbind(exprs(merge.fr),exprs(fs[[i]]))
-  merge.id <- c(merge.id,rep(i,v.events[i, ]))
-}
+exprs(merge.fr) <- fsApply(fs, exprs)
+merge.id <- rep(1:length(fs), v.events)
 
 # random index for plotting 2K events per sample (~70K in total)
 event.id <- 1:length(merge.id)
@@ -231,39 +228,43 @@ fs.means.robust.pvals <- cbind(SM.p.value=fs.means.sm,
 
 # model between-subject variances as random effect:
 fs.means.lme <- sapply(1:ncol(fs.means), function(i) {
-				df <- data.frame(Marker=fs.means[rmvd,i], 
-				                 study[rmvd , c("Donor", "Region")])
-				lmer(Marker ~ Region + (1|Donor), data=df)
-				}, simplify=FALSE)
+                       df <- data.frame(Marker=fs.means[rmvd,i], 
+                             study[rmvd , c("Donor", "Region")])
+                       mod <- lmer(Marker ~ Region + (1|Donor), data=df)
+                       # anova on fixed effect
+                       ano <- anova(mod)
+                       # liklihood ratio test on random effect
+                       rand <- ranova(mod)["(1 | Donor)",]
+                       list(mod, ano, rand)
+                       }, simplify=FALSE)
 names(fs.means.lme) <- colnames(fs.means)
 
 # anova on fixed effect
-fs.means.lme.aov <- sapply(fs.means.lme, anova)
+fs.means.lme.aov <- sapply(fs.means.lme, '[[', 2)
 fs.means.lme.aov <- cbind(t(fs.means.lme.aov) , 
                           p.value.BH=p.adjust(fs.means.lme.aov[6,], "BH") )
 fs.means.lme.aov
 
 # liklihood ratio test on random effect
-fs.means.lme.rand <- sapply(fs.means.lme, rand)
-fs.means.lme.rand <- do.call("rbind",fs.means.lme.rand)
-fs.means.lme.rand 
+fs.means.lme.rand <- t(sapply(fs.means.lme, '[[', 3))
+fs.means.lme.rand
 
 # ANOVA posthoc: pairwise within group comparisons with Holm-correction  
 fs.means.lme.post <- sapply(fs.means.lme, function(x){ 
-								diffl <- difflsmeans(x, test.effs = "Region")[[1]]
-								diffl[,7] <- p.adjust(diffl[,7],"holm")
-								diffl}, simplify=FALSE)
+                            diffl <- difflsmeans(x[[1]], test.effs = "Region")[[1]]
+                            diffl[,7] <- p.adjust(diffl[,7],"holm")
+                            diffl}, simplify=FALSE)
 fs.means.lme.post <- do.call("rbind",fs.means.lme.post)
 fs.means.lme.post <- cbind(fs.means.lme.post, 
                            p.value.BH=p.adjust(fs.means.lme.post[,7], "BH") )
-fs.means.lme.post
+head(fs.means.lme.post)
 
 # clean-up
 rm(list=c("fs.means.lme", "fs.means.lme.rand","fs.means", 
           "fs.means.lme.aov", "fs.means.lme.post"))
 detach("package:lmerTest", unload=TRUE)
 detach("package:lme4", unload=TRUE)
-gc(); gcDLLs() 
+gc(); R.utils::gcDLLs() 
 
 # ******************************************************************************
 #                      probability binning
@@ -375,7 +376,7 @@ dev.off()
 rm(list=c("dmd", "hmd","emd"))
 detach("package:vegan", unload=TRUE)
 detach("package:emdist", unload=TRUE)
-gc(); gcDLLs() 
+gc(); R.utils::gcDLLs() 
 
 # ******************************************************************************
 #                      bin-wise testing
@@ -640,8 +641,8 @@ if (!all(check.cutoffs)) {
 	}
 # 
 manual.cutoffs <- sapply(gs.name[visne.ch.idx], function(x) {
-					sort(unname(unlist(manual.cutoffs[names(manual.cutoffs) %in% x])))
-					}, simplify=FALSE)  
+                         sort(unname(unlist(manual.cutoffs[names(manual.cutoffs) %in% x])))
+                         }, simplify=FALSE)  
 
 # cutoffs have channel names, switch to pretty marker names
 names(manual.cutoffs) <- switch.names(as.matrix(fs.desc[,1:3]), 
@@ -957,8 +958,8 @@ pheno.names <- dimnames(freq.ft)[[1]]
 
 # perform Skilling-Mack w/o MC-simulation
 sm.Rchy.pvals <-  sm.test(y=t(freq.ft)[rmvd, ],
-						    groups=study$Region[rmvd], blocks=study$Donor[rmvd], 
-								simulate.p.value = F, B = 10000, sim.SM=FALSE)$p.value
+                          groups=study$Region[rmvd], blocks=study$Donor[rmvd], 
+                          simulate.p.value = F, B = 10000, sim.SM=FALSE)$p.value
 sm.Rchy.ranked <- order(sm.Rchy.pvals , decreasing=FALSE)
 best.phenotype.index <- sm.Rchy.ranked[1]
 selected.phenotype <- pheno.codes[best.phenotype.index]
@@ -1063,7 +1064,7 @@ rm(list=c("RchyResult", "ResList","freq.ft", "tempRes", "bestRchyResult",
            "pheno.codes", "pheno.names", "sm.Rchy.pvals", "sm.Rchy.ranked"))
 detach("package:RchyOptimyx", unload=TRUE)
 detach("package:flowType", unload=TRUE)
-gc(); gcDLLs() 
+gc(); R.utils::gcDLLs() 
 
 # ******************************************************************************
 #       testing for differential abundance using hyperspheres (Lun et al.)
@@ -1078,8 +1079,8 @@ library(edgeR)
 
 # count data into hyperspheres, downsample=5, i.e. to 1 fifth of total, to reduce
 # computational work
-cd <- prepareCellData(fs, markers=colnames(fs)[visne.ch.idx], naive=FALSE)
-cd <- countCells(cd, tol=0.5, downsample=5, filter=5, naive=FALSE)
+cd <- prepareCellData(fs, markers=colnames(fs)[visne.ch.idx])
+cd <- countCells(cd, tol=0.5, downsample=5, filter=5)
 
 # create edgeR object
 y <- DGEList(assay(cd), lib.size=cd$totals)
@@ -1105,7 +1106,7 @@ topTags(res)
 pvals <- res$table$PValue
 
 # correct for multiple testing by controlling spatial FDR
-qvals <- spatialFDR(intensities(cd), pvals, naive=FALSE)
+qvals <- spatialFDR(intensities(cd), pvals)
 is.sig <- qvals <= 0.05
 sum(is.sig)
 
@@ -1117,8 +1118,8 @@ sum(nonred & is.sig)
 # visualization of hyperspheres by tSNE dimensionality reduction
 
 # get the center cells to map hyperspheres on the tSNE plot used above
-sphere.center <- elementMetadata(cd)$center.cell
-cd.loc <- t(cellIntensities(cd))
+sphere.center <- getCenterCell(cd)
+cd.loc <- t(cellIntensities(cd, mode="all"))
 colnames(cd.loc) <- p.desc
 # note that Lun et al. apply tSNE on median-positioned hyperspheres, i.e. 
 # coords <- intensities(cd)
@@ -1179,12 +1180,9 @@ plotContours(css.cd, comp.sel=T, col="grey", pch=20, cex=0.15, lwd=2.5,
              fhat.levels=F, labels="peak.ids", filwd=.5, density=50)
 
 # compare and visualize expression levels 
-# use hypersphere weighted median intensities
-cd.hs <- intensities(cd)
 cd.hs <- cd.loc[sphere.center,]
-colnames(cd.hs) <- p.desc
-# add tnse coords
-cd.hs[, c("tSNE1", "tSNE2")] <- cd.loc[sphere.center, c("tSNE1", "tSNE2")]
+# use hypersphere weighted median intensities
+cd.hs[,visne.ch.idx] <- intensities(cd)
 
 # downsample expression data to enable comparison of delta values
 set.seed(13)

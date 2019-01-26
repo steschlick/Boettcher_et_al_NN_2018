@@ -6,7 +6,7 @@ The R ['Script_NN-T61915'](Script_NN-T61915.R) outlines the analysis conducted f
 
 2) unzip and move folder (should be 'FlowRepository_FR-FCM-ZYM6_files') to your working directory
 
-3) install required packages and dependencies (you need to have R (> 3.4.1), https://www.r-project.org/):  
+3) install required packages and dependencies (you need to have R (>= 3.5.0), https://www.r-project.org/):  
 
 ```r
 # dependencies
@@ -15,9 +15,9 @@ install.packages(c("ks", "dbscan", "feature", "shiny", "rmarkdown", "rgl", "knit
 # required to reproduce figures
 install.packages(c("devtools", "R.utils", "lme4", "lmerTest", "flowFP", "vegan"))
 
-# try http:// if https:// URLs are not supported
-source("https://bioconductor.org/biocLite.R")
-biocLite(c("flowWorkspace", "CytoML", "flowType", "RchyOptimyx", "edgeR", "cydar"))
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("flowWorkspace", "CytoML", "flowType", "RchyOptimyx", "edgeR", "cydar"), version = "3.8")
 
 # use install.packages("emdist") if 0.3-2 doesn’t work 
 library(devtools)
